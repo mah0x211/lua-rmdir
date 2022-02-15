@@ -1,7 +1,7 @@
 # lua-rmdir
 
 [![test](https://github.com/mah0x211/lua-rmdir/actions/workflows/test.yml/badge.svg)](https://github.com/mah0x211/lua-rmdir/actions/workflows/test.yml)
-[![Coverage Status](https://coveralls.io/repos/github/mah0x211/lua-rmdir/badge.svg?branch=master)](https://coveralls.io/github/mah0x211/lua-rmdir?branch=master)
+[![codecov](https://codecov.io/gh/mah0x211/lua-rmdir/branch/master/graph/badge.svg?token=NC0N3888PV)](https://codecov.io/gh/mah0x211/lua-rmdir)
 
 remove a directory file.
 
