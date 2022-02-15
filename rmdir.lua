@@ -36,9 +36,10 @@ local IGNORE_FILES = {
 --- removedir
 --- @param path string
 --- @param recursive boolean
+--- @param follow_symlink boolean
 --- @return boolean ok
 --- @return string err
-local function removedir(path, recursive)
+local function removedir(path, recursive, follow_symlink)
     if recursive then
         local dir, err, errno = opendir(path)
         if not dir then
@@ -54,7 +55,7 @@ local function removedir(path, recursive)
                 local stat
 
                 -- check type of entry
-                stat, err, errno = fstat(target, false)
+                stat, err, errno = fstat(target, follow_symlink)
                 if not stat then
                     return false, err, errno
                 end
@@ -63,7 +64,8 @@ local function removedir(path, recursive)
                 if stat.type ~= 'directory' then
                     ok, err = remove(target)
                 else
-                    ok, err, errno = removedir(target, recursive)
+                    ok, err, errno =
+                        removedir(target, recursive, follow_symlink)
                 end
 
                 if not ok then
@@ -89,25 +91,28 @@ end
 --- rmdir
 --- @param pathname string
 --- @param recursive boolean
+--- @param follow_symlink boolean
 --- @return boolean ok
 --- @return string err
-local function rmdir(pathname, recursive)
+local function rmdir(pathname, recursive, follow_symlink)
     if type(pathname) ~= 'string' then
         error('pathname must be string')
     elseif recursive ~= nil and type(recursive) ~= 'boolean' then
         error('recursive must be boolean')
+    elseif follow_symlink ~= nil and type(follow_symlink) ~= 'boolean' then
+        error('follow_symlink must be boolean')
     end
 
     local path = gsub(pathname, '/+', '/')
     -- check type of entry
-    local stat, err, errno = fstat(path, false)
+    local stat, err, errno = fstat(path, follow_symlink == true)
     if not stat then
         return false, err, errno
     elseif stat.type ~= 'directory' then
         return false, format('%s is not directory', pathname)
     end
 
-    return removedir(path, recursive)
+    return removedir(path, recursive, follow_symlink == true)
 end
 
 return rmdir
