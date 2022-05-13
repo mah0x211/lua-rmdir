@@ -41,43 +41,42 @@ local IGNORE_FILES = {
 --- @return string err
 local function removedir(path, recursive, follow_symlink)
     if recursive then
-        local dir, err, errno = opendir(path)
+        local dir, err = opendir(path)
         if not dir then
-            return false, err, errno
+            return false, err
         end
 
         -- remove contents
         local entry
-        entry, err, errno = dir:readdir()
+        entry, err = dir:readdir()
         while entry do
             if not IGNORE_FILES[entry] then
                 local target = gsub(path .. '/' .. entry, '/+', '/')
                 local stat
 
                 -- check type of entry
-                stat, err, errno = fstat(target, follow_symlink)
+                stat, err = fstat(target, follow_symlink)
                 if not stat then
-                    return false, err, errno
+                    return false, err
                 end
 
                 local ok
                 if stat.type ~= 'directory' then
                     ok, err = remove(target)
                 else
-                    ok, err, errno =
-                        removedir(target, recursive, follow_symlink)
+                    ok, err = removedir(target, recursive, follow_symlink)
                 end
 
                 if not ok then
-                    return false, err, errno
+                    return false, err
                 end
             end
 
-            entry, err, errno = dir:readdir()
+            entry, err = dir:readdir()
         end
 
         if err then
-            return false, err, errno
+            return false, err
         end
     end
 
@@ -105,9 +104,9 @@ local function rmdir(pathname, recursive, follow_symlink)
 
     local path = gsub(pathname, '/+', '/')
     -- check type of entry
-    local stat, err, errno = fstat(path, follow_symlink == true)
+    local stat, err = fstat(path, follow_symlink == true)
     if not stat then
-        return false, err, errno
+        return false, err
     elseif stat.type ~= 'directory' then
         return false, format('%s is not directory', pathname)
     end

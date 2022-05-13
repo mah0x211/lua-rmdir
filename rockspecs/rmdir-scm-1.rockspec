@@ -1,4 +1,3 @@
-rockspec_format = "3.0"
 package = "rmdir"
 version = "scm-1"
 source = {
@@ -12,8 +11,8 @@ description = {
 }
 dependencies = {
     "lua >= 5.1",
-    "fstat >= 0.2.0",
-    "opendir >= 0.1.0",
+    "fstat >= 0.2.2",
+    "opendir >= 0.2.1",
 }
 build = {
     type = "builtin",
