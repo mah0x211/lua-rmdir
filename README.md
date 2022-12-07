@@ -12,7 +12,7 @@ remove a directory file.
 luarocks install rmdir
 ```
 
-## ok, err = rmdir( pathname [, recursive [, follow_symlink]] )
+## ok, err = rmdir( pathname [, recursive [, follow_symlink [, approver]]] )
 
 remove a directory.
 
@@ -21,9 +21,22 @@ remove a directory.
 - `pathname:string`: path of the directory.
 - `recursive:boolean`: remove directories and their contents recursively. (default `false`)
 - `follow_symlink:boolean`: follow symbolic links. (default `false`)
+- `approver:function`: callback function to be called before removing each entry. (default `nil`)
+    ```
+    -- Specification of the compiler function
+    ok [, err] = approver( entry, isdir )
+
+    -- arguments
+    - `entry:string`: path of the entry.
+    - `isdir:boolean`: true on entry is directory.
+
+    -- returns
+    - `ok:boolean`: return true if the entry can be removed.
+    - `err:any`: return any error if the removing process must be aborted immediately.
+    ```
 
 **Returns**
 
 - `ok:boolean`: `true` on success.
-- `err:string`: error message.
+- `err:any`: error message.
 
