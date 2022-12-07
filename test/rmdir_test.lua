@@ -63,3 +63,52 @@ function testcase.rmdir_recursive()
     assert.match(err, 'recursive must be boolean')
 end
 
+function testcase.rmdir_approve()
+    local entries = {
+        {
+            entry = './testdir/foo/bar/baz/qux',
+            isdir = true,
+        },
+        {
+            entry = './testdir/foo/bar/baz',
+            isdir = true,
+        },
+        {
+            entry = './testdir/foo/bar',
+            isdir = true,
+        },
+        {
+            entry = './testdir/foo',
+            isdir = true,
+        },
+        {
+            entry = './testdir/hello',
+            isdir = false,
+        },
+        {
+            entry = './testdir',
+            isdir = true,
+        },
+    }
+    -- test that calls the approver function and not remove entries
+    assert(rmdir('./testdir', true, nil, function(entry, isdir)
+        assert.equal(entry, entries[1].entry)
+        assert.equal(isdir, entries[1].isdir)
+        table.remove(entries, 1)
+    end))
+    assert.empty(entries)
+    local stat = fstat('./testdir')
+    assert(stat ~= nil, './testdir is not exist')
+
+    -- test that remove entries if approver return true
+    assert(rmdir('./testdir', true, nil, function()
+        return true
+    end))
+    stat = fstat('./testdir')
+    assert(stat == nil, './testdir is exist')
+
+    -- test that throws an error if invalid argumnet
+    local err = assert.throws(rmdir, './testdir', nil, nil, {})
+    assert.match(err, 'approver must be function')
+end
+
