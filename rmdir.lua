@@ -74,12 +74,13 @@ local function removedir(path, recursive, follow_symlink, approver)
                 local ok
                 if stat.type ~= 'directory' then
                     ok, err = approver(target, false)
-                    if ok then
-                        ok, err = remove(target)
-                    elseif err then
-                        return false, err
-                    else
+                    if not ok then
+                        if err ~= nil then
+                            return false, err
+                        end
                         ok = true
+                    else
+                        ok, err = remove(target)
                     end
                 else
                     ok, err = removedir(target, recursive, follow_symlink,
@@ -101,7 +102,7 @@ local function removedir(path, recursive, follow_symlink, approver)
 
     local ok, err = approver(path, true)
     if not ok then
-        if err then
+        if err ~= nil then
             return false, err
         end
         return true
@@ -116,11 +117,11 @@ end
 
 --- rmdir
 --- @param pathname string
---- @param recursive boolean
---- @param follow_symlink boolean
---- @param approver function
+--- @param recursive boolean|nil
+--- @param follow_symlink boolean|nil
+--- @param approver function|nil
 --- @return boolean ok
---- @return string err
+--- @return any err
 local function rmdir(pathname, recursive, follow_symlink, approver)
     if type(pathname) ~= 'string' then
         error('pathname must be string')
@@ -128,21 +129,32 @@ local function rmdir(pathname, recursive, follow_symlink, approver)
         error('recursive must be boolean')
     elseif follow_symlink ~= nil and type(follow_symlink) ~= 'boolean' then
         error('follow_symlink must be boolean')
-    elseif approver ~= nil and type(approver) ~= 'function' then
+    elseif approver == nil then
+        approver = DEFAULT_APPROVER
+    elseif type(approver) ~= 'function' then
         error('approver must be function')
     end
 
     local path = gsub(pathname, '/+', '/')
     -- check type of entry
-    local stat, err = fstat(path, follow_symlink == true)
+    local stat, ferr = fstat(path, follow_symlink == true)
     if not stat then
-        return false, err
+        return false, ferr
     elseif stat.type ~= 'directory' then
         return false, format('%s is not directory', pathname)
     end
 
-    return removedir(path, recursive, follow_symlink == true,
-                     approver or DEFAULT_APPROVER)
+    local approved = true
+    local ok, err = removedir(path, recursive, follow_symlink == true,
+                              function(...)
+        local ok, err = approver(...)
+        if not ok then
+            approved = false
+        end
+        return ok, err
+    end)
+
+    return approved and ok, err
 end
 
 return rmdir

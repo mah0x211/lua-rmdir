@@ -47,9 +47,21 @@ function testcase.rmdir()
     assert.is_false(ok)
     assert.match(err, 'not directory')
 
-    -- test that throws an error if invalid argumnet
+    -- test that throws an error if pathname argument is invalid
     err = assert.throws(rmdir, {})
     assert.match(err, 'pathname must be string')
+
+    -- test that throws an error if recursive argumnet is invalid
+    err = assert.throws(rmdir, './testdir', {})
+    assert.match(err, 'recursive must be boolean')
+
+    -- test that throws an error if follow_symlink argumnet is invalid
+    err = assert.throws(rmdir, './testdir', nil, {})
+    assert.match(err, 'follow_symlink must be boolean')
+
+    -- test that throws an error if approver argumnet is invalid
+    err = assert.throws(rmdir, './testdir', nil, nil, {})
+    assert.match(err, 'approver must be function')
 end
 
 function testcase.rmdir_recursive()
@@ -57,10 +69,6 @@ function testcase.rmdir_recursive()
     assert(rmdir('./testdir', true))
     local stat = fstat('./testdir')
     assert(stat == nil, './testdir is exist')
-
-    -- test that throws an error if invalid argumnet
-    local err = assert.throws(rmdir, './testdir', {})
-    assert.match(err, 'recursive must be boolean')
 end
 
 function testcase.rmdir_approve()
@@ -91,11 +99,13 @@ function testcase.rmdir_approve()
         },
     }
     -- test that calls the approver function and not remove entries
-    assert(rmdir('./testdir', true, nil, function(entry, isdir)
+    local ok, err = rmdir('./testdir', true, nil, function(entry, isdir)
         assert.equal(entry, entries[1].entry)
         assert.equal(isdir, entries[1].isdir)
         table.remove(entries, 1)
-    end))
+    end)
+    assert.is_false(ok)
+    assert.is_nil(err)
     assert.empty(entries)
     local stat = fstat('./testdir')
     assert(stat ~= nil, './testdir is not exist')
@@ -106,9 +116,5 @@ function testcase.rmdir_approve()
     end))
     stat = fstat('./testdir')
     assert(stat == nil, './testdir is exist')
-
-    -- test that throws an error if invalid argumnet
-    local err = assert.throws(rmdir, './testdir', nil, nil, {})
-    assert.match(err, 'approver must be function')
 end
 
