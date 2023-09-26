@@ -12,6 +12,11 @@ remove a directory file.
 luarocks install rmdir
 ```
 
+## Error Handling
+
+the following functions return the error object created by https://github.com/mah0x211/lua-errno module.
+
+
 ## ok, err = rmdir( pathname [, recursive [, follow_symlink [, approver]]] )
 
 remove a directory.
@@ -38,5 +43,5 @@ remove a directory.
 **Returns**
 
 - `ok:boolean`: `true` on success.
-- `err:any`: error message.
+- `err:any`: error object.
 

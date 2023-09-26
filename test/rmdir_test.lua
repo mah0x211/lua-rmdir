@@ -73,36 +73,17 @@ end
 
 function testcase.rmdir_approve()
     local entries = {
-        {
-            entry = './testdir/foo/bar/baz/qux',
-            isdir = true,
-        },
-        {
-            entry = './testdir/foo/bar/baz',
-            isdir = true,
-        },
-        {
-            entry = './testdir/foo/bar',
-            isdir = true,
-        },
-        {
-            entry = './testdir/foo',
-            isdir = true,
-        },
-        {
-            entry = './testdir/hello',
-            isdir = false,
-        },
-        {
-            entry = './testdir',
-            isdir = true,
-        },
+        ['./testdir/foo/bar/baz/qux'] = true,
+        ['./testdir/foo/bar/baz'] = true,
+        ['./testdir/foo/bar'] = true,
+        ['./testdir/foo'] = true,
+        ['./testdir/hello'] = false,
+        ['./testdir'] = true,
     }
     -- test that calls the approver function and not remove entries
     local ok, err = rmdir('./testdir', true, nil, function(entry, isdir)
-        assert.equal(entry, entries[1].entry)
-        assert.equal(isdir, entries[1].isdir)
-        table.remove(entries, 1)
+        assert.equal(isdir, entries[entry])
+        entries[entry] = nil
     end)
     assert.is_false(ok)
     assert.is_nil(err)
