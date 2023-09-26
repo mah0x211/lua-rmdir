@@ -14,7 +14,7 @@ luarocks install rmdir
 
 ## Error Handling
 
-the following functions return the error object created by https://github.com/mah0x211/lua-errno module.
+the following functions return the error object created by https://github.com/mah0x211/lua-error module.
 
 
 ## ok, err = rmdir( pathname [, recursive [, follow_symlink [, approver]]] )
