@@ -25,6 +25,7 @@ local format = string.format
 local gsub = string.gsub
 local remove = os.remove
 local type = type
+local toerror = require('error').toerror
 local fstat = require('fstat')
 local opendir = require('opendir')
 -- constants
@@ -76,7 +77,7 @@ local function removedir(path, recursive, follow_symlink, approver)
                     ok, err = approver(target, false)
                     if not ok then
                         if err ~= nil then
-                            return false, err
+                            return false, toerror(err)
                         end
                         ok = true
                     else
@@ -103,14 +104,14 @@ local function removedir(path, recursive, follow_symlink, approver)
     local ok, err = approver(path, true)
     if not ok then
         if err ~= nil then
-            return false, err
+            return false, toerror(err)
         end
         return true
     end
 
     ok, err = remove(path)
     if not ok then
-        return false, err
+        return false, toerror(err)
     end
     return true
 end
@@ -141,7 +142,7 @@ local function rmdir(pathname, recursive, follow_symlink, approver)
     if not stat then
         return false, ferr
     elseif stat.type ~= 'directory' then
-        return false, format('%s is not directory', pathname)
+        return false, toerror(format('%s is not directory', pathname))
     end
 
     local approved = true
@@ -151,7 +152,7 @@ local function rmdir(pathname, recursive, follow_symlink, approver)
         if not ok then
             approved = false
         end
-        return ok, err
+        return ok, err and toerror(err) or nil
     end)
 
     return approved and ok, err
