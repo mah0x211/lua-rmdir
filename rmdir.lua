@@ -25,9 +25,10 @@ local format = string.format
 local gsub = string.gsub
 local remove = os.remove
 local type = type
-local toerror = require('error').toerror
 local fstat = require('fstat')
 local opendir = require('opendir')
+local errorf = require('error').format
+local ENOTDIR = require('errno').ENOTDIR
 -- constants
 local IGNORE_FILES = {
     ['.'] = true,
@@ -55,7 +56,7 @@ local function removedir(path, recursive, follow_symlink, approver)
     if recursive then
         local dir, err = opendir(path)
         if not dir then
-            return false, err
+            return false, errorf('failed to opendir()', err)
         end
 
         -- remove contents
@@ -69,7 +70,7 @@ local function removedir(path, recursive, follow_symlink, approver)
                 -- check type of entry
                 stat, err = fstat(target, follow_symlink)
                 if not stat then
-                    return false, err
+                    return false, errorf('failed to fstat()', err)
                 end
 
                 local ok
@@ -77,7 +78,7 @@ local function removedir(path, recursive, follow_symlink, approver)
                     ok, err = approver(target, false)
                     if not ok then
                         if err ~= nil then
-                            return false, toerror(err)
+                            return false, errorf('failed to approver()', err)
                         end
                         ok = true
                     else
@@ -89,7 +90,7 @@ local function removedir(path, recursive, follow_symlink, approver)
                 end
 
                 if not ok then
-                    return false, err
+                    return false, errorf('failed to remove %s', target, err)
                 end
             end
 
@@ -104,14 +105,14 @@ local function removedir(path, recursive, follow_symlink, approver)
     local ok, err = approver(path, true)
     if not ok then
         if err ~= nil then
-            return false, toerror(err)
+            return false, errorf('failed to approver()', err)
         end
         return true
     end
 
     ok, err = remove(path)
     if not ok then
-        return false, toerror(err)
+        return false, errorf('failed to remove %q', path, err)
     end
     return true
 end
@@ -140,9 +141,9 @@ local function rmdir(pathname, recursive, follow_symlink, approver)
     -- check type of entry
     local stat, ferr = fstat(path, follow_symlink == true)
     if not stat then
-        return false, ferr
+        return false, errorf('failed to fstat()', ferr)
     elseif stat.type ~= 'directory' then
-        return false, toerror(format('%s is not directory', pathname))
+        return false, ENOTDIR:new(format('%q', pathname))
     end
 
     local approved = true
@@ -151,8 +152,12 @@ local function rmdir(pathname, recursive, follow_symlink, approver)
         local ok, err = approver(...)
         if not ok then
             approved = false
+            if err then
+                return false, errorf('failed to approver()', err)
+            end
+            return false
         end
-        return ok, err and toerror(err) or nil
+        return true
     end)
 
     return approved and ok, err
