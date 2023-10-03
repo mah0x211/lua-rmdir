@@ -1,5 +1,6 @@
 require('luacov')
 local testcase = require('testcase')
+local assert = require('assert')
 local mkdir = require('mkdir')
 local fstat = require('fstat')
 local rmdir = require('rmdir')
@@ -35,7 +36,7 @@ function testcase.rmdir()
     -- test that return an error if not exist
     local ok, err = rmdir('./testdir/foo/bar/baz/qux')
     assert.is_false(ok)
-    assert(err, 'no error')
+    assert.match(err, 'fstat()')
 
     -- test that return an error if not empty
     ok, err = rmdir('./testdir')
@@ -45,7 +46,7 @@ function testcase.rmdir()
     -- test that return an error if not directory
     ok, err = rmdir('./testdir/hello')
     assert.is_false(ok)
-    assert.match(err, 'not directory')
+    assert.match(err, 'ENOTDIR')
 
     -- test that throws an error if pathname argument is invalid
     err = assert.throws(rmdir, {})

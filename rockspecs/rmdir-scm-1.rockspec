@@ -11,7 +11,8 @@ description = {
 }
 dependencies = {
     "lua >= 5.1",
-    "error >= 0.9.0",
+    "error >= 0.11.0",
+    "errno >= 0.4.0",
     "fstat >= 0.2.2",
     "opendir >= 0.2.1",
 }
