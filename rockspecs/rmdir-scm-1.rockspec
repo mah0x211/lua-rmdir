@@ -15,6 +15,7 @@ dependencies = {
     "errno >= 0.4.0",
     "fstat >= 0.2.2",
     "opendir >= 0.2.1",
+    "os-remove >= 0.1.0",
 }
 build = {
     type = "builtin",
