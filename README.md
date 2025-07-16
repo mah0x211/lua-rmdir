@@ -28,7 +28,7 @@ remove a directory.
 - `follow_symlink:boolean`: follow symbolic links. (default `false`)
 - `approver:function`: callback function to be called before removing each entry. (default `nil`)
     ```
-    -- Specification of the compiler function
+    -- Specification of the approver function
     ok [, err] = approver( entry, isdir )
 
     -- arguments

@@ -23,12 +23,12 @@
 local error = error
 local format = string.format
 local gsub = string.gsub
-local remove = os.remove
 local type = type
 local fstat = require('fstat')
 local opendir = require('opendir')
 local errorf = require('error').format
 local ENOTDIR = require('errno').ENOTDIR
+local remove = require('os.remove')
 -- constants
 local IGNORE_FILES = {
     ['.'] = true,
@@ -45,6 +45,36 @@ local function DEFAULT_APPROVER(entry, isdir)
     return true
 end
 
+--- check if a directory exists and is a directory
+--- @param path string
+--- @param follow_symlink boolean
+--- @return boolean isdir
+--- @return any err
+local function isdir(path, follow_symlink)
+    -- check type of entry
+    local stat, ferr = fstat(path, follow_symlink)
+    if not stat then
+        return false, errorf('failed to fstat()', ferr)
+    end
+    return stat.type == 'directory'
+end
+
+--- remove specified entry
+--- @param path string
+--- @param approver function
+--- @param is_dir boolean
+--- @return boolean ok
+--- @return any err
+local function rment(path, approver, is_dir)
+    local ok, err = approver(path, is_dir)
+    if err ~= nil then
+        return false, errorf('failed to approver()', err)
+    elseif ok then
+        return remove(path)
+    end
+    return true
+end
+
 --- removedir
 --- @param path string
 --- @param recursive boolean
@@ -56,44 +86,36 @@ local function removedir(path, recursive, follow_symlink, approver)
     if recursive then
         local dir, err = opendir(path)
         if not dir then
-            return false, errorf('failed to opendir()', err)
+            return false, err
         end
 
-        -- remove contents
+        -- remove all entries in the directory
         local entry
         entry, err = dir:readdir()
         while entry do
             if not IGNORE_FILES[entry] then
                 local target = gsub(path .. '/' .. entry, '/+', '/')
-                local stat
 
-                -- check type of entry
-                stat, err = fstat(target, follow_symlink)
-                if not stat then
-                    return false, errorf('failed to fstat()', err)
-                end
-
+                -- check if target is a directory
                 local ok
-                if stat.type ~= 'directory' then
-                    ok, err = approver(target, false)
-                    if not ok then
-                        if err ~= nil then
-                            return false, errorf('failed to approver()', err)
-                        end
-                        ok = true
-                    else
-                        ok, err = remove(target)
-                    end
-                else
+                ok, err = isdir(target, follow_symlink)
+                if err then
+                    return false, err
+                elseif ok then
+                    -- if target is a directory, recursively remove it
                     ok, err = removedir(target, recursive, follow_symlink,
                                         approver)
+                else
+                    ok, err = rment(target, approver, false)
                 end
 
-                if not ok then
+                -- if there was an error removing the entry, return it
+                if not ok and err then
                     return false, errorf('failed to remove %s', target, err)
                 end
             end
 
+            -- read next entry
             entry, err = dir:readdir()
         end
 
@@ -102,27 +124,16 @@ local function removedir(path, recursive, follow_symlink, approver)
         end
     end
 
-    local ok, err = approver(path, true)
-    if not ok then
-        if err ~= nil then
-            return false, errorf('failed to approver()', err)
-        end
-        return true
-    end
-
-    ok, err = remove(path)
-    if not ok then
-        return false, errorf('failed to remove %q', path, err)
-    end
-    return true
+    -- finally, remove the directory itself
+    return rment(path, approver, true)
 end
 
 --- rmdir
 --- @param pathname string
---- @param recursive boolean|nil
---- @param follow_symlink boolean|nil
---- @param approver function|nil
---- @return boolean ok
+--- @param recursive boolean?
+--- @param follow_symlink boolean?
+--- @param approver function?
+--- @return boolean ok true if all entries were removed
 --- @return any err
 local function rmdir(pathname, recursive, follow_symlink, approver)
     if type(pathname) ~= 'string' then
@@ -137,19 +148,19 @@ local function rmdir(pathname, recursive, follow_symlink, approver)
         error('approver must be function')
     end
 
+    recursive = recursive == true
+    follow_symlink = follow_symlink == true
+
+    -- confirm that pathname is a directory
     local path = gsub(pathname, '/+', '/')
-    -- check type of entry
-    local stat, ferr = fstat(path, follow_symlink == true)
-    if not stat then
-        return false, errorf('failed to fstat()', ferr)
-    elseif stat.type ~= 'directory' then
-        return false, ENOTDIR:new(format('%q', pathname))
+    local ok, err = isdir(path, follow_symlink)
+    if not ok then
+        return false, err or ENOTDIR:new(format('%q', pathname))
     end
 
     local approved = true
-    local ok, err = removedir(path, recursive, follow_symlink == true,
-                              function(...)
-        local ok, err = approver(...)
+    ok, err = removedir(path, recursive, follow_symlink, function(...)
+        ok, err = approver(...)
         if not ok then
             approved = false
             if err then
